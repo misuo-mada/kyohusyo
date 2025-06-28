@@ -2,8 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>フォビア・パーティ - チャットストーリー</title>
   <style>
+
+@media (max-aspect-ratio: 9/16) {
+  #chat {
+    max-height: 80vh;
+  }
+  #titleScreen {
+    padding: 20px;
+    justify-content: flex-start;
+  }
+}
+
+
     body {
       margin: 0;
       background: url('bg.jpg') no-repeat center center / cover;
@@ -35,13 +48,15 @@
       cursor: pointer;
     }
 
-   #chat {
+#chat {
   max-width: 480px;
+  width: 100%;
   margin: 0 auto;
   padding: 10px;
   padding-bottom: 80px;
-  background-color: rgba(245, 245, 245, 0.2); /* ← 透過度を変更 */
-  backdrop-filter: blur(4px); /* ← 背景動画にぼかし効果（お好みで） */
+  background-color: rgba(245, 245, 245, 0.2);
+  backdrop-filter: blur(4px);
+  max-height: 90vh; /* ← 高さの上限を追加 */
   height: calc(100vh - 80px);
   overflow-y: auto;
   display: none;
