@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>フォビア・パーティ - チャットストーリー</title>
+  <style>
+    body {
+      margin: 0;
+      background: url('bg.jpg') no-repeat center center / cover;
+      font-family: "Helvetica Neue", sans-serif;
+    }
+
+    #titleScreen {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(229, 221, 213, 0.9);
+    }
+
+    #titleScreen h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    #titleScreen button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      border-radius: 25px;
+      border: none;
+      background-color: #128C7E;
+      color: white;
+      cursor: pointer;
+    }
+
+   #chat {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px;
+  padding-bottom: 80px;
+  background-color: rgba(245, 245, 245, 0.2); /* ← 透過度を変更 */
+  backdrop-filter: blur(4px); /* ← 背景動画にぼかし効果（お好みで） */
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  border-radius: 12px;
+}
+
+
+    .msg {
+      max-width: 80%;
+      margin: 6px;
+      padding: 10px;
+      border-radius: 18px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .left {
+      align-self: flex-start;
+      background-color: white;
+      border-bottom-left-radius: 0;
+    }
+
+    .right {
+      align-self: flex-end;
+      background-color: #dcf8c6;
+      border-bottom-right-radius: 0;
+      flex-direction: row-reverse;
+    }
+
+    .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .name {
+      font-size: 12px;
+      margin: 4px;
+      color: #666;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 10px;
+    }
+
+    #controls button {
+      background-color: #128C7E;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #gameOverScreen {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      font-size: 24px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #gameOverScreen button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 20px;
+      background: #128C7E;
+      color: white;
+      cursor: pointer;
+    }
+
+    #imageModal {
+      display: none;
+      position: fixed;
+      z-index: 99999;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #imageModal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #000;
+      transition: transform 0.3s ease;
+    }
+
+    #imageModal:active img {
+      transform: scale(1.01);
+    }
+
+#bgVideo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  min-width: 100vw;
+  min-height: 100vh;
+  object-fit: cover;
+  z-index: -1; /* 背景として背面に */
+}
+
+
+
+  </style>
+</head>
+<body>
+
+<video id="bgVideo" autoplay muted loop playsinline>
+  <source src="bg.mp4" type="video/mp4">
+  お使いのブラウザは動画をサポートしていません。
+</video>
+
+
+  <div id="titleScreen">
+    <h1>フォビア・パーティ</h1>
+    <button onclick="startNew()">▶ 最初から</button>
+  </div>
+
+  <div id="chat"></div>
+
+  <div id="controls">
+    <button id="nextBtn">▶ 次へ</button>
+    <button id="saveBtn">💾 保存</button>
+    <button id="loadBtn">📂 読込</button>
+  </div>
+
+  <div id="gameOverScreen">
+    <p>💀 ゲームオーバー</p>
+    <button onclick="returnToTitle()">タイトルへ戻る</button>
+  </div>
+
+  <div id="imageModal" onclick="closeImageModal()">
+    <img id="modalImg" src="" alt="拡大画像">
+  </div>
+
+  <audio id="se" src="click.mp3" preload="auto"></audio>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const nextBtn = document.getElementById("nextBtn");
+    const controls = document.getElementById("controls");
+    const se = document.getElementById("se");
+    const gameOverScreen = document.getElementById("gameOverScreen");
+    const titleScreen = document.getElementById("titleScreen");
+
+    const story = [
+      { type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "博士が倒れたのはあなたのせい…違いますよね？" },
+      {
+        type: "choice",
+        choices: [
+          { text: "そんなはずない", next: "deny", correct: true },
+          { text: "……もしかして", next: "admit", correct: false }
+        ]
+      },
+      { id: "deny", type: "msg", name: "あなた", side: "right", icon: "you.png", text: "そんなはずありません。" },
+      { id: "deny", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "そう…信じています。" },
+      { id: "deny", type: "image", src: "study.jpg", caption: "書斎にあった奇妙な写真", side: "left", icon: "shiratori.png", name: "白鳥" },
+      { id: "deny", type: "image", src: "study.jpg", caption: "ああああ", side: "left", icon: "you.png", name: "あなた" },
+      { id: "deny", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "まずは手がかりを探しましょう。どこから調べますか？" },
+      {
+        type: "choice",
+        choices: [
+          { text: "書斎を調べる", next: "study", correct: true },
+          { text: "キッチンを調べる", next: "kitchen", correct: false }
+        ]
+      },
+      { id: "study", type: "msg", name: "あなた", side: "right", icon: "you.png", text: "書斎が怪しい気がします。" },
+      { id: "study", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "いい判断だと思います。" },
+      { id: "kitchen", type: "msg", name: "あなた", side: "right", icon: "you.png", text: "キッチンを見てみます。" },
+      { id: "kitchen", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "…そこは違う気がするけど。" }
+    ];
+
+    let index = 0;
+    let currentBranch = null;
+    let mistakeCount = 0;
+
+    function addMessage(msg) {
+      const msgEl = document.createElement("div");
+      msgEl.classList.add("msg", msg.side);
+
+      if (msg.type === "image") {
+        msgEl.innerHTML = `
+          <div class="icon" style="background-image: url('${msg.icon || 'shiratori.png'}')"></div>
+          <div>
+            <div class="name">${msg.name || "画像"}</div>
+            <img src="${msg.src}" alt="${msg.caption || ''}" style="max-width: 100%; border-radius: 10px; margin-top: 5px; cursor: pointer;">
+            ${msg.caption ? `<div style="font-size: 12px; color: #555; margin-top: 4px;">${msg.caption}</div>` : ""}
+          </div>
+        `;
+      } else {
+        msgEl.innerHTML = `
+          <div class="icon" style="background-image: url('${msg.icon}')"></div>
+          <div>
+            <div class="name">${msg.name}</div>
+            <div class="text"></div>
+          </div>
+        `;
+      }
+
+      chat.appendChild(msgEl);
+
+      if (msg.type === "msg") {
+        const textEl = msgEl.querySelector(".text");
+        let i = 0;
+        const interval = setInterval(() => {
+          textEl.textContent += msg.text[i];
+          i++;
+          if (i >= msg.text.length) clearInterval(interval);
+        }, 30);
+        se.currentTime = 0;
+        se.play();
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      if (msg.type === "image") {
+        const img = msgEl.querySelector("img");
+        img.onload = () => {
+          chat.scrollTop = chat.scrollHeight;
+        };
+        img.onclick = () => {
+          document.getElementById("modalImg").src = img.src;
+          document.getElementById("imageModal").style.display = "flex";
+        };
+      }
+    }
+
+   function showChoice(choices, isRestored = false) {
+  nextBtn.style.display = "none";
+  const choiceBox = document.createElement("div");
+  choiceBox.id = "choiceBox";
+  choiceBox.style.textAlign = "center";
+
+  choices.forEach(choice => {
+    const btn = document.createElement("button");
+    btn.textContent = choice.text;
+    btn.style.margin = "6px";
+    btn.style.padding = "10px 20px";
+    btn.style.borderRadius = "15px";
+    btn.style.border = "none";
+    btn.style.backgroundColor = "#128C7E";
+    btn.style.color = "white";
+    btn.style.fontSize = "16px";
+
+    // 選択肢情報を属性として保存（セーブ用）
+    btn.setAttribute("data-correct", choice.correct);
+    btn.setAttribute("data-next", choice.next);
+
+    btn.onclick = () => {
+      if (choice.correct) {
+        currentBranch = choice.next;
+        chat.removeChild(choiceBox);
+        nextBtn.style.display = "inline-block";
+        nextStep();
+      } else {
+        mistakeCount++;
+        chat.removeChild(choiceBox);
+        addMessage({ type: "msg", name: "システム", side: "left", icon: "warning.png", text: `その選択肢は違うようだ…（ミス${mistakeCount}回目）` });
+        if (mistakeCount >= 3) {
+          setTimeout(() => showGameOver(), 1000);
+        } else {
+          setTimeout(() => showChoice(choices), 1000);
+        }
+      }
+    };
+
+    choiceBox.appendChild(btn);
+  });
+
+  chat.appendChild(choiceBox);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+
+    function nextStep() {
+      while (index < story.length) {
+        const item = story[index];
+        if ((item.type === "msg" || item.type === "image") && (!item.id || item.id === currentBranch)) {
+          addMessage(item);
+          index++;
+          break;
+        }
+        if (item.type === "choice") {
+          showChoice(item.choices);
+          index++;
+          break;
+        }
+        index++;
+      }
+      if (index >= story.length) {
+        nextBtn.disabled = true;
+        nextBtn.innerText = "終わり";
+      }
+    }
+
+    function startNew() {
+      titleScreen.style.display = "none";
+      gameOverScreen.style.display = "none";
+      chat.style.display = "flex";
+      controls.style.display = "flex";
+      chat.innerHTML = "";
+      index = 0;
+      currentBranch = null;
+      mistakeCount = 0;
+      nextBtn.disabled = false;
+      nextBtn.innerText = "▶ 次へ";
+      nextBtn.style.display = "inline-block";
+      const oldChoiceBox = document.getElementById("choiceBox");
+      if (oldChoiceBox) oldChoiceBox.remove();
+      nextStep();
+    }
+
+    function returnToTitle() {
+      gameOverScreen.style.display = "none";
+      chat.style.display = "none";
+      controls.style.display = "none";
+      titleScreen.style.display = "flex";
+    }
+
+    function startContinue() {
+      startNew();
+    }
+
+    function showGameOver() {
+      gameOverScreen.style.display = "flex";
+      chat.style.display = "none";
+      controls.style.display = "none";
+      nextBtn.disabled = true;
+    }
+
+    function closeImageModal() {
+      document.getElementById("imageModal").style.display = "none";
+    }
+
+    nextBtn.addEventListener("click", nextStep);
+
+  // セーブ処理
+ function saveGame() {
+  const choiceBox = document.getElementById("choiceBox");
+  let currentChoices = null;
+
+  if (choiceBox) {
+    currentChoices = Array.from(choiceBox.querySelectorAll("button")).map((btn, i) => {
+      return {
+        text: btn.textContent,
+        correct: btn.getAttribute("data-correct") === "true",
+        next: btn.getAttribute("data-next")
+      };
+    });
+  }
+
+  const saveData = {
+    index,
+    currentBranch,
+    mistakeCount,
+    chatHTML: chat.innerHTML,
+    nextDisabled: nextBtn.disabled,
+    nextText: nextBtn.innerText,
+    currentChoices
+  };
+  localStorage.setItem("phobia_save", JSON.stringify(saveData));
+  alert("保存しました！");
+}
+
+function loadGame() {
+  const data = localStorage.getItem("phobia_save");
+  if (!data) {
+    alert("保存データがありません");
+    return;
+  }
+
+  const saveData = JSON.parse(data);
+  titleScreen.style.display = "none";
+  gameOverScreen.style.display = "none";
+  chat.style.display = "flex";
+  controls.style.display = "flex";
+
+  index = saveData.index;
+  currentBranch = saveData.currentBranch;
+  mistakeCount = saveData.mistakeCount;
+  chat.innerHTML = saveData.chatHTML;
+  nextBtn.disabled = saveData.nextDisabled;
+  nextBtn.innerText = saveData.nextText;
+  nextBtn.style.display = nextBtn.disabled ? "none" : "inline-block";
+
+  // モーダル再設定
+  document.querySelectorAll("#chat img").forEach(img => {
+    img.onclick = () => {
+      document.getElementById("modalImg").src = img.src;
+      document.getElementById("imageModal").style.display = "flex";
+    };
+  });
+
+  // 選択肢を復元
+  const oldBox = document.getElementById("choiceBox");
+  if (oldBox) oldBox.remove();
+
+  if (saveData.currentChoices) {
+    showChoice(saveData.currentChoices, true); // true = 復元モード
+  }
+}
+
+
+  // ボタンにイベント追加
+  document.getElementById("saveBtn").addEventListener("click", saveGame);
+  document.getElementById("loadBtn").addEventListener("click", loadGame);
+
+    
+  </script>
+</body>
+</html>
