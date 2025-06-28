@@ -241,6 +241,19 @@ button::after {
   }
 }
 
+.choice-glow {
+  animation: glow 1s ease-in-out infinite alternate;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.9);
+  }
+}
 
 
   </style>
@@ -365,8 +378,7 @@ button::after {
         };
       }
     }
-
-   function showChoice(choices, isRestored = false) {
+function showChoice(choices, isRestored = false) {
   nextBtn.style.display = "none";
   const choiceBox = document.createElement("div");
   choiceBox.id = "choiceBox";
@@ -383,25 +395,31 @@ button::after {
     btn.style.color = "white";
     btn.style.fontSize = "16px";
 
-    // 選択肢情報を属性として保存（セーブ用）
+    btn.classList.add("choice-glow");
+
     btn.setAttribute("data-correct", choice.correct);
     btn.setAttribute("data-next", choice.next);
 
     btn.onclick = () => {
-      if (choice.correct) {
-        currentBranch = choice.next;
-        chat.removeChild(choiceBox);
-        nextBtn.style.display = "inline-block";
-        nextStep();
-      } else {
-        mistakeCount++;
-        chat.removeChild(choiceBox);
-        addMessage({ type: "msg", name: "システム", side: "left", icon: "warning.png", text: `その選択肢は違うようだ…（ミス${mistakeCount}回目）` });
+      currentBranch = choice.next;
+      mistakeCount += choice.correct ? 0 : 1;
+      chat.removeChild(choiceBox);
+      if (!choice.correct) {
+        addMessage({
+          type: "msg",
+          name: "システム",
+          side: "left",
+          icon: "warning.png",
+          text: `その選択肢は違うようだ…（ミス${mistakeCount}回目）`
+        });
         if (mistakeCount >= 3) {
-          setTimeout(() => showGameOver(), 1000);
+          setTimeout(showGameOver, 1000);
         } else {
           setTimeout(() => showChoice(choices), 1000);
         }
+      } else {
+        nextBtn.style.display = "inline-block";
+        nextStep();
       }
     };
 
@@ -411,6 +429,7 @@ button::after {
   chat.appendChild(choiceBox);
   chat.scrollTop = chat.scrollHeight;
 }
+
 
 
     function nextStep() {
