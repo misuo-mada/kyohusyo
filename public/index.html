@@ -196,6 +196,51 @@
   z-index: -1; /* 背景として背面に */
 }
 
+#controls button,
+#titleScreen button,
+#gameOverScreen button {
+  transition: all 0.2s ease; /* アニメーション */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+}
+
+#controls button:hover,
+#titleScreen button:hover,
+#gameOverScreen button:hover {
+  background-color: #0f6f65; /* ホバー時に色変更（濃く） */
+  transform: translateY(-2px); /* 浮き上がる */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+}
+
+#controls button:active,
+#titleScreen button:active,
+#gameOverScreen button:active {
+  transform: scale(0.96); /* クリック時に縮む */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+button {
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
 
 
   </style>
@@ -502,6 +547,31 @@ function loadGame() {
   document.getElementById("loadBtn").addEventListener("click", loadGame);
 
     
+
+  document.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", function (e) {
+      const circle = document.createElement("span");
+      const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+      const rect = btn.getBoundingClientRect();
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${e.clientX - rect.left - diameter / 2}px`;
+      circle.style.top = `${e.clientY - rect.top - diameter / 2}px`;
+      circle.style.position = "absolute";
+      circle.style.borderRadius = "50%";
+      circle.style.background = "rgba(255, 255, 255, 0.4)";
+      circle.style.transform = "scale(0)";
+      circle.style.animation = "ripple 0.6s linear";
+      circle.style.pointerEvents = "none";
+      btn.appendChild(circle);
+
+      setTimeout(() => {
+        circle.remove();
+      }, 600);
+    });
+  });
+
+
+
   </script>
 </body>
 </html>
