@@ -309,7 +309,7 @@ button::after {
   <script>
 
 const characterInfo = {
-  "リク": { img: "ri.png", desc: "彼女持ち。優柔不断な浮気男。" },
+  "リク": { img: "ri.png", desc: "ナナミと付き合っているが、ミサとも浮気している。優柔不断。" },
   "ナナミ": { img: "na.png", desc: "やや依存気味。リクが好きすぎて怖い。 " },
   "ミサ": { img: "mi.png", desc: "軽いノリでリクと遊んでいたが、秘密主義。" },
   "ストーリー": { img: "story.png", desc: "ストーリー" },
@@ -530,10 +530,10 @@ iconEl.onclick = () => {
         img.onload = () => {
           chat.scrollTop = chat.scrollHeight;
         };
-        img.onclick = () => {
-          document.getElementById("modalImg").src = img.src;
-          document.getElementById("imageModal").style.display = "flex";
-        };
+        // img.onclick = () => {
+        //   document.getElementById("modalImg").src = img.src;
+        //   document.getElementById("imageModal").style.display = "flex";
+        // };
       }
     }
 function showChoice(choices, isRestored = false) {
