@@ -30,7 +30,6 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background-color: rgba(229, 221, 213, 0.9);
     }
 
     #titleScreen h1 {
@@ -170,7 +169,7 @@
       top: 0;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(0, 0, 0, 0.8);
+      background-color: rgba(0, 0, 0, 0.3);
       justify-content: center;
       align-items: center;
     }
@@ -196,29 +195,34 @@
   object-fit: cover;
   z-index: -1; /* 背景として背面に */
 }
-
 #controls button,
 #titleScreen button,
 #gameOverScreen button {
-  transition: all 0.2s ease; /* アニメーション */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  transform: translateY(0);
+  background-color: rgba(18, 140, 126, 0.2); /* 半透明 */
+  backdrop-filter: blur(6px); /* 背景ぼかし */
+  color: #eee; /* 薄い文字色 */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
 #controls button:hover,
 #titleScreen button:hover,
 #gameOverScreen button:hover {
-  background-color: #0f6f65; /* ホバー時に色変更（濃く） */
-  transform: translateY(-2px); /* 浮き上がる */
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+  background-color: rgba(30, 160, 140, 0.3);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+  transform: translateY(-2px);
 }
 
 #controls button:active,
 #titleScreen button:active,
 #gameOverScreen button:active {
-  transform: scale(0.96); /* クリック時に縮む */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: scale(0.96);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
 }
+
 
 button {
   position: relative;
@@ -262,15 +266,25 @@ button::after {
 <body>
 
 <video id="bgVideo" autoplay muted loop playsinline>
-  <source src="bg.mp4" type="video/mp4">
+  <source src="t.mp4" type="video/mp4">
   お使いのブラウザは動画をサポートしていません。
 </video>
+
+
+<div id="imageModal" onclick="closeImageModal()">
+  <div style="text-align: center;">
+    <img id="modalImg" src="" alt="拡大画像">
+    <div id="modalCaption" style="color: #fff; margin-top: 12px; font-size: 14px;"></div>
+  </div>
+</div>
 
 
   <div id="titleScreen">
     <h1>フォビア・パーティ</h1>
     <button onclick="startNew()">▶ 最初から</button>
   </div>
+
+
 
   <div id="chat"></div>
 
@@ -292,6 +306,22 @@ button::after {
   <audio id="se" src="click.mp3" preload="auto"></audio>
 
   <script>
+
+const characterInfo = {
+  "リク": { img: "ri.png", desc: "彼女持ち。優柔不断な浮気男。" },
+  "ナナミ": { img: "na.png", desc: "やや依存気味。リクが好きすぎて怖い。 " },
+  "ミサ": { img: "mi.png", desc: "軽いノリでリクと遊んでいたが、秘密主義。" },
+  "ストーリー": { img: "story.png", desc: "ストーリー" },
+  "緑坂": { img: "midori.png", desc: "暗闇が苦手。常にライトを持ち歩いている。" },
+  "紫橋": { img: "murasaki.png", desc: "血を見るのが苦手。食事の場面では震えてしまう。" },
+  "青土": { img: "ao.png", desc: "怖がりで常に怯えているが、本当は優しい心の持ち主。" },
+  "灰針": { img: "hai.png", desc: "鏡が怖い。何かが映ることを恐れている。" },
+  "あなた": { img: "you.png", desc: "プレイヤー自身。恐怖の真相を追う勇敢な存在。" },
+  "白鳥": { img: "shiratori.png", desc: "博士の本名。何か裏があるようだ。" }
+};
+
+
+
     const chat = document.getElementById("chat");
     const nextBtn = document.getElementById("nextBtn");
     const controls = document.getElementById("controls");
@@ -299,32 +329,140 @@ button::after {
     const gameOverScreen = document.getElementById("gameOverScreen");
     const titleScreen = document.getElementById("titleScreen");
 
-    const story = [
-      { type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "博士が倒れたのはあなたのせい…違いますよね？" },
+const story = [
+  {
+    type: "msg",
+    name: "ストーリー",
+    side: "left",
+    icon: "story.png",
+    text: "2025年7月。正体不明の奇病『フィロマニア』が、若者たちの間で都市伝説的に流行っていた。それは——「愛が強すぎるあまり、相手を監視せずにはいられなくなる病」と言われている。最初は、SNSで拡散された“ただの噂”にすぎなかった。「恋人にGPSを仕掛けられた」「友達に盗撮された」いつの間にか、それらの過剰な愛着衝動を「ギリシャ語由来で「愛する・好む」を意味する単語、Philo-（フィロ）に「異常な熱中・執着」を意味する、mania（マニア）を組み合わせて「フィロマニア」と呼ばれるようになった。フィロマニアは本当に存在する病なのか？それとも、誰かが仕組んだ“狂気”の連鎖なのか。果たして・・・・" },
+  {
+    type: "msg",
+    name: "ストーリー",
+    side: "left",
+    icon: "story.png",
+    text: "7月5日。あなたは、幼い頃からの幼馴染・ナナミと付き合っている普通の高校生。だけど——その裏で、もう一人の幼馴染・ミサと秘密の関係を続けている。3人だけのライングループ。いつも通りの、他愛ないやり取り。……のはずだった。だが、ある話題をきっかけに、日常は崩れ始める。浮気を隠し通すか？　真実を明かすか？交差するメッセージ、揺れる心、暴かれていく「記憶」と「嘘」。真相にたどり着く鍵は、チャットの中にすべてある。間違った選択は、恋も友情も崩壊させる。あなたの“選択”が、この物語の結末を決める——"
+  },
+  {
+        type: "choice",
+        choices: [
+          { text: "物語を進める。", next: "deny", correct: true },
+        ]
+      },
+      { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "今日めっちゃ暑かったね～☀️学校行くだけで汗だくだった💦" },
+      { id: "deny", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "いやほんとそれ！駅まで歩いてるだけでTシャツ2枚目いきそうだっ（笑）" },
+      { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "2枚目ｗｗどんな発汗量だよミサ😂" },
+  { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ねえ、リクくんって、夏派？冬派？👀" },
+          { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "ん～、秋かな？（笑）夏は汗かくし、冬は布団から出れんし…" },
+   { id: "deny", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "優柔不断ｗさすがリクって感じ🤣" },
+            { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "おいおい、褒めてんのか？それｗ" },
+    { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "でもそういうとこ好きだけどね☺️" },
+     { id: "deny", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "出た出た～ナナミの惚気タイムｗ" },
+        { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ふふふ～💕" },
+           { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "いや、照れるからやめてくれ💦" },
+    { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "あ、そういえばリクってこの前、西駅の方にいた？駅前のカフェで見たって友だちが言ってた～" },
+            { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "え？あー……そ、そうだね。どうかな、覚えてないなあ・・・" },
+     { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "なるほどね～でもさ、西駅って、たしか・・・ミサの家の近くだよね？" },
+     { id: "deny", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "・・・そうだね。" },
+     { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "もしかして、ミサの家に用事あったの？" },
+           { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "ちょっとだけ、寄ったような気がするけど・・・" },
+        { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "え～私、ミサの家に行ったことないから、行きたかったな～。でも、その“ちょっと”って……何分くらい？" },
+          { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "・・・・・・" },
+ { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "──ていうかね、リクくん。これ見てくれない？" },
+      { id: "deny", type: "image", src: "keitai.jpg", caption: "ベッドの上のスマホ：撮影日時　2025年6月30日AM2時", side: "left", icon: "na.png", name: "ナナミ" },
+         { id: "deny", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "……え？" },
+  { id: "deny", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "……は？これ……ウチじゃん。" },
+ { id: "deny", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "─ーこれって、リクくんのスマホだよね？ねえ、答えて、この写真は、何？" },
+
       {
         type: "choice",
         choices: [
-          { text: "そんなはずない", next: "deny", correct: true },
-          { text: "……もしかして", next: "admit", correct: false }
+          { text: "……ごめん。ミサの部屋、入ったよ。でも、すぐに帰ったよ。", next: "study", correct: true },
+          { text: "あ、この写真……昔、友達と一緒にミサの家で遊んだ時に撮ったやつだね。", next: "kitchen", correct: false ,wrongMsg: "撮影日時から、かなり不信感を与える返答である。" }
         ]
       },
-      { id: "deny", type: "msg", name: "あなた", side: "right", icon: "you.png", text: "そんなはずありません。" },
-      { id: "deny", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "そう…信じています。" },
-      { id: "deny", type: "image", src: "study.jpg", caption: "書斎にあった奇妙な写真", side: "left", icon: "shiratori.png", name: "白鳥" },
-      { id: "deny", type: "image", src: "study.jpg", caption: "ああああ", side: "left", icon: "you.png", name: "あなた" },
-      { id: "deny", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "まずは手がかりを探しましょう。どこから調べますか？" },
-      {
+    { id: "study", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ふーん、そうなんだ。──じゃあ、これは？" },
+        { id: "study", type: "image", src: "T.jpg", caption: "Tシャツ：撮影日時　2025年6月30日AM3時", side: "left", icon: "na.png", name: "ナナミ" },
+   { id: "study", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "このTシャツ、リクくんのじゃない？" },
+    { id: "study", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "あ、ちょっと待ってそれ……" },
+
+        {
         type: "choice",
         choices: [
-          { text: "書斎を調べる", next: "study", correct: true },
-          { text: "キッチンを調べる", next: "kitchen", correct: false }
+          { text: "……俺のじゃないよ。似ているだけじゃないかな？", next: "3", correct: true },
+          { text: "え？あ、それ、たまたま忘れただけ。その日は、夜、すぐに帰ったし・・・", next: "kitchen", correct: false ,wrongMsg: "撮影日時が２時になっていて、すぐに帰った、という理由では不信感を与える。" }
         ]
       },
-      { id: "study", type: "msg", name: "あなた", side: "right", icon: "you.png", text: "書斎が怪しい気がします。" },
-      { id: "study", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "いい判断だと思います。" },
-      { id: "kitchen", type: "msg", name: "あなた", side: "right", icon: "you.png", text: "キッチンを見てみます。" },
-      { id: "kitchen", type: "msg", name: "白鳥", side: "left", icon: "shiratori.png", text: "…そこは違う気がするけど。" }
-    ];
+    { id: "3", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "そうだよ、これ、お兄ちゃんのだから！この日は、リク君が来て、スマホを忘れちゃって、ただそれだけだよ！" },
+  { id: "3", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ふーん。そうなんだ・・・そうだと思った！ごめんね、変なこと聞いちゃって！" },
+         { id: "3", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "でも、なんでこんな写真、ナナミが持ってるんだ？" },
+  { id: "3", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ねえ、リクくん、ミサちゃん──ちょっと、これ見てもらっていい？" },
+     { id: "3", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "ナナミからあるHPのURLが送られてきた。" },
+    { id: "3", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "……なにこれ？……は？ちょっと待って、これ──なんで、私の部屋の写真があるの？え、嘘でしょ……？" },
+ { id: "3", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "このリンクの中にね──他にも、ミサちゃんの部屋の写真が何枚も入ってるの。" },
+         { id: "3", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "……え？ちょ、ちょっと待って……どういうこと……？" },
+  { id: "3", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "たまたま、私がインスタで写真探してた時にね、コメント欄から変なリンク踏んじゃったの。" },
+ { id: "3", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "そしたら、そこに飛んで──そこには盗撮写真がたくさん掲載されてて最初は、なんかのイタズラかと思ったけど……スクロールしたら……ミサちゃんの部屋っぽい写真があったの。" },
+ 
+    {
+        type: "choice",
+        choices: [
+          { text: "だから、俺を疑ってたのか？俺じゃない。絶対に違うって。", next: "4", correct: true },
+          { text: "もしかして、ナナミ、お前が・・・", next: "kitchen", correct: false ,wrongMsg: "ナナミが盗撮サイトに投降した証拠はなにもない。ナナミに強い不信感を与えた。" }
+        ]
+      },
+   { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "そう言うと思った。だから、ちゃんと調べたんだよ──" },
+   { id: "4", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "調べたって、どういうこと……？" },
+  { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ミサの部屋の写真が投降され始めたのは、6月25日ごろ。──リクくんが、ミサの家に来る数日前。" },
+          { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "いや、だから俺じゃ──" },
+  { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "リクくんじゃないよ。最初は疑ってごめんね。でも……犯人、分かったの。" },
+           { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "え……？" },
+  { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "ミサちゃん、6月25日って、なにか家に来た人いた？" },
+   { id: "4", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "……あ。エアコンの点検。夏前だからって、母が呼んだ業者さん……！" },
+  { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "その業者──個人業者だったでしょ？" },
+    { id: "4", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "う、うん。なんか、町内会のチラシで見たって、お母さんが……" },
+   { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "その人が、部屋に一人で入った時間、なかった？点検って言って、10分くらい、誰もいない部屋に……" },
+    { id: "4", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "あ……ある。私、お茶入れてて……その間に……" },
+   { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "たぶんその時に、カーテンレールか、エアコン近くにカメラを設置したんだよ。──ミサちゃんが着替える角度、完璧に映るようにね。" },
+            { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "そんな……そんなこと、あるのかよ……" },
+  { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "この人、他にも「設置代行します」って掲示板に書いてた。複数の女の子の部屋の写真も見つけたよ。でも、ミサちゃんの写真は、明らかに多かった。" },
+     { id: "4", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "……じゃあ、私、ずっと……あの部屋で……見られてたってこと……？" },
+    { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "大丈夫。さっき、この情報、警察のサイバー犯罪対策課に送った。" },
+        { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "ナナミ……お前、そこまで……？" },
+ { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "だって……大事な友だちだもん。大切な人を、疑ってばっかりじゃいけないって、気づいたから。" },
+       { id: "4", type: "msg", name: "ミサ", side: "left", icon: "mi.png", text: "ナナミ……ありがとう……ほんとに……ありがとう……" },
+  { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "……でも、まだカメラが部屋に残ってる可能性がある。今から、一緒に確認しに行こう？リクくんも来てくれるよね？" },
+    { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "（7月1日・夜）警察に情報提供した後、3人はミサの部屋に設置されていた小型カメラを発見。業者の男はその後、逮捕された。事件は、解決した──はずだった。" },
+        { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "……事件が片付いてから、もう3日が経った。" },
+        { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "ナナミはいつも通りだし、ミサも元気を取り戻してる。でも──頭から離れないんだ。" },
+   { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "──どうして、あの時ナナミは、“写真を見てすぐに”ミサの部屋だって、分かったんだろう？" },
+        { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "画像は、部屋の中。カーテンも閉まっていて、場所の手がかりなんて、ほとんどない。それ以前に、ナナミは、ミサの家に行ったことないはず。それなのに、「ミサの部屋だ」って、ナナミは即答してた。普通、そんなに分かるか……？" },
+  { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "翌朝・学校" },
+         { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "（ナナミ、今日休みか……）" },
+           { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "カバンを机に置いた瞬間、違和感が走る。" },
+            { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "──なにか、重い……？このポケット、こんな厚かったっけ……？" },
+            { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "チャックを開けると、見慣れない小さな黒いデバイスが。" },
+                { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "……なに、これ。" },
+        { id: "4", type: "image", src: "g.jpg", caption: "超小型GPS発信器", side: "left", icon: "ri.png", name: "リク" },
+         { id: "4", type: "image", src: "c.jpg", caption: "ICレコーダー型の隠しカメラ", side: "left", icon: "ri.png", name: "リク" },
+                 { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "──こんなもの、もちろん入れた覚えはない。" },
+                { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "あなたは、放課後・人気のない屋上にナナミを呼び出した。" },
+                    { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "リクは震える手で、ナナミに問いかける。" },
+                     { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "なあ……ナナミ。ちょっと聞いていい？" },
+    { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "（微笑みながら）うん、なに？" },
+   { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "──なんで、あの日、盗撮サイトの画像を見てすぐ、「ミサの部屋」だって分かったんだ？" },
+       { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "（ナナミ、ぴたりと笑顔を止める）" },
+         { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "…………リクくんは、誰のことを疑ってるの？" },
+     { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "……俺のカバンから、GPSと……隠しカメラが見つかった。──これって、どういうこと？" },
+    { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "……リクくん、嘘ついたよね。「すぐ帰った」とか。" },
+     { id: "4", type: "msg", name: "リク", side: "right", icon: "ri.png", text: "それは……でも、ナナミ……" },
+     { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "だからね、**“リクくんのこと、ちゃんと見てた”**んだよ。だって、私の彼氏だもん。" },
+        { id: "4", type: "msg", name: "ストーリー", side: "left", icon: "story.png", text: "ナナミは、静かにスマホを取り出す。" },
+      { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "だからね、**……ねえ、これ、知ってる？「フィロマニア」って病気。**んだよ。だって、私の彼氏だもん。" },
+       { id: "4", type: "msg", name: "ナナミ", side: "left", icon: "na.png", text: "だからね、**──愛が強すぎて、壊れちゃう病気。でも、それって悪いこと？好きな人が、どこで、何してるか……知りたいって、当然じゃない……？**んだよ。だって、私の彼氏だもん。" },
+       
+
+];
 
     let index = 0;
     let currentBranch = null;
@@ -352,6 +490,24 @@ button::after {
           </div>
         `;
       }
+
+      // キャラアイコンをクリックで拡大＋説明表示
+const iconEl = msgEl.querySelector(".icon");
+iconEl.style.cursor = "pointer";
+iconEl.onclick = () => {
+  const name = msg.name;
+  if (characterInfo[name]) {
+    document.getElementById("modalImg").src = characterInfo[name].img;
+    document.getElementById("modalCaption").textContent = characterInfo[name].desc;
+    document.getElementById("imageModal").style.display = "flex";
+  } else {
+    // 名前が見つからなかった場合のフォールバック
+    document.getElementById("modalImg").src = msg.icon;
+    document.getElementById("modalCaption").textContent = "このキャラクターの説明はありません。";
+    document.getElementById("imageModal").style.display = "flex";
+  }
+};
+
 
       chat.appendChild(msgEl);
 
@@ -400,19 +556,25 @@ function showChoice(choices, isRestored = false) {
 
     btn.setAttribute("data-correct", choice.correct);
     btn.setAttribute("data-next", choice.next);
+    btn.setAttribute("data-wrongMsg", choice.wrongMsg || "");
 
     btn.onclick = () => {
       currentBranch = choice.next;
-      mistakeCount += choice.correct ? 0 : 1;
+      const isCorrect = choice.correct;
+      const wrongMsg = btn.getAttribute("data-wrongMsg");
       chat.removeChild(choiceBox);
-      if (!choice.correct) {
+
+      if (!isCorrect) {
+        mistakeCount++;
+
         addMessage({
           type: "msg",
           name: "システム",
           side: "left",
           icon: "warning.png",
-          text: `その選択肢は違うようだ…（ミス${mistakeCount}回目）`
+          text: `${wrongMsg || "その選択肢は違うようだ…"}（ミス${mistakeCount}回目）`
         });
+
         if (mistakeCount >= 3) {
           setTimeout(showGameOver, 1000);
         } else {
