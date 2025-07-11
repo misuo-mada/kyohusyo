@@ -185,16 +185,18 @@
     #imageModal:active img {
       transform: scale(1.01);
     }
-
 #bgVideo {
   position: fixed;
   top: 0;
   left: 0;
-  min-width: 100vw;
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   object-fit: cover;
-  z-index: -1; /* 背景として背面に */
+  z-index: -1;
+  opacity: 0.9; /* ← 透明度も調整可（お好みで） */
+  pointer-events: none; /* ← 背景動画にマウスが反応しないようにする */
 }
+
 #controls button,
 #titleScreen button,
 #gameOverScreen button {
