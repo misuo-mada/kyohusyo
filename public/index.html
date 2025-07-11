@@ -267,6 +267,10 @@ button::after {
 </head>
 <body>
 
+<audio id="bgm" src="bgm.mp3" loop></audio>
+
+
+
 <video id="bgVideo" autoplay muted loop playsinline>
   <source src="t.mp4" type="video/mp4">
   お使いのブラウザは動画をサポートしていません。
@@ -307,6 +311,20 @@ button::after {
   <audio id="se" src="click.mp3" preload="auto"></audio>
 
   <script>
+
+const bgm = document.getElementById("bgm");
+
+// 一度だけBGM再生
+function enableBGMOnce() {
+  bgm.play().catch(() => {}); // ユーザー操作後なのでブロックされにくい
+  document.removeEventListener("click", enableBGMOnce);
+  document.removeEventListener("touchstart", enableBGMOnce);
+}
+
+// ユーザー操作を待つ
+document.addEventListener("click", enableBGMOnce);
+document.addEventListener("touchstart", enableBGMOnce);
+
 
 const characterInfo = {
   "リク": { img: "ri.png", desc: "ナナミと付き合っているが、ミサとも浮気している。優柔不断。" },
